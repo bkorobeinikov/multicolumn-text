@@ -1,34 +1,34 @@
 .App {
-    font-family: sans-serif;
-    text-align: center;
-  }
-  
-  .splitter {
-    column-span: all;
-    background-color: black;
-    height: 10px;
-  
-    margin: 20px;
-  }
-  
-  .article .article-content {
-  }
-  
-  .article-ghost {
-  }
-  
-  .article-ghost p {
-    margin: 0;
-  }
-  
-  .article-ghost .article-content {
-  }
-  
-  p:first-child {
-    margin-top: 0;
-  }
-  p {
-    /* margin: 0; */
-    text-align: justify;
-  }
-  
+  font-family: sans-serif;
+  text-align: center;
+}
+
+.splitter {
+  column-span: all;
+  background-color: black;
+  height: 10px;
+
+  margin: 20px;
+}
+
+.article .article-content {
+}
+
+.article-ghost {
+}
+
+.article-ghost .article-content {
+}
+
+p:first-child {
+  /* margin-top: 0; */
+  padding-top: 0;
+}
+p {
+  margin: 0;
+  text-align: justify;
+
+  padding-block-start: 1em;
+  padding-inline-start: 0px;
+  padding-inline-end: 0px;
+}

@@ -1,4 +1,5 @@
-import { intersects, IRect } from "./geometry";
+import { intersectRelative, intersects, IRect } from "./geometry";
+import { IVirtualDocument, IVirtualPage } from "./text";
 
 export const splitPreserve = (value: string, seperator: string) => {
   var temp = "",
@@ -170,4 +171,114 @@ export function analyzeColumns(options: { container: HTMLElement }): IColumn[] {
   }
 
   return columns;
+}
+
+export function columnsToVirtualDocument(
+  columns: IColumn[],
+  options: { container: HTMLElement; columnCount: number }
+): IVirtualDocument {
+  const columnContext = buildColumnContext(options.container);
+
+  const containerRect = domRectToRect(
+    options.container.getBoundingClientRect()
+  );
+
+  const doc: IVirtualDocument = { pages: [] };
+
+  const pagesCount = Math.ceil(columns.length / options.columnCount);
+
+  for (let pIndex = 0; pIndex < pagesCount; pIndex++) {
+    const cols = columns.slice(
+      pIndex * options.columnCount,
+      pIndex * options.columnCount + options.columnCount
+    );
+
+    const firstCol = cols[0];
+
+    const pageRect: IRect = {
+      top: firstCol.innerRect.top,
+      left: firstCol.innerRect.left,
+      width: columnContext.pageRect.width,
+      height: columnContext.pageRect.height,
+    };
+
+    const page: IVirtualPage = {
+      absoluteRect: pageRect,
+      rect: {
+        top: pageRect.top - containerRect.top,
+        left: pageRect.left - containerRect.left,
+        width: pageRect.width,
+        height: pageRect.height,
+      },
+      columns: [
+        ...cols.map((c) => {
+          return {
+            absoluteRect: c.innerRect,
+            rect: intersectRelative(pageRect, c.innerRect)!,
+            media: [],
+          };
+        }),
+      ],
+    };
+
+    doc.pages.push(page);
+  }
+
+  return doc;
+}
+
+export function renderMediaIntoDOM(
+  doc: IVirtualDocument,
+  options: { container: HTMLElement }
+) {
+  doc.pages.forEach((p) => {
+    p.columns.forEach((c) => {
+      c.media.forEach((m) => {
+        const elementUnderMediaTopLeft = document.elementsFromPoint(
+          m.absoluteRect.left,
+          m.absoluteRect.top
+        ) as HTMLElement[];
+
+        if (elementUnderMediaTopLeft) {
+          let wordEl = elementUnderMediaTopLeft.find(
+            (el) => el.dataset.type === "word"
+          );
+
+          if (!wordEl) {
+            const paragraphEl = elementUnderMediaTopLeft.find(
+              (el) => el.dataset.type === "paragraph"
+            );
+            if (paragraphEl) {
+              const wordsEls = paragraphEl.querySelectorAll(
+                "[data-type='word']"
+              );
+              wordEl = wordsEls.item(wordsEls.length - 1) as HTMLElement;
+            }
+            console.log(`didn't find anything`, elementUnderMediaTopLeft);
+          }
+
+          if (wordEl) {
+            console.log("found element under media", wordEl);
+
+            const mediaEl = document.createElement("div");
+
+            if (m.rect.left === 0) {
+              mediaEl.style.float = "left";
+              mediaEl.style.backgroundColor = "blue";
+            } else if (m.rect.left + m.rect.width === c.rect.width) {
+              mediaEl.style.float = "right";
+              mediaEl.style.backgroundColor = "red";
+            } else {
+              mediaEl.style.backgroundColor = "yellow";
+            }
+
+            mediaEl.style.height = m.rect.height + "px";
+            mediaEl.style.width = m.rect.width + "px";
+
+            wordEl.parentElement!.insertBefore(mediaEl, wordEl);
+          }
+        }
+      });
+    });
+  });
 }
